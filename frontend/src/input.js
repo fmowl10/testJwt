@@ -1,6 +1,6 @@
 import React from 'react'
 import 'semantic-ui-css/semantic.min.css'
-import {Grid, Form, Label, Button, Message} from 'semantic-ui-react'
+import {Grid, Form, Button, Message} from 'semantic-ui-react'
 
 class Input extends React.Component {
     constructor(props) {

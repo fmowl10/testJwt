@@ -1,6 +1,6 @@
 import React from 'react'
 import 'semantic-ui-css/semantic.min.css'
-import {Button, Input, Form} from 'semantic-ui-react'
+import {Input, Form} from 'semantic-ui-react'
 import {w3cwebsocket as W3CWebSocket} from "websocket";
 
 class Chat extends React.Component {
