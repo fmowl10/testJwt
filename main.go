@@ -89,8 +89,6 @@ func read(conn *websocket.Conn) {
 			log.Println(errors.Wrap(err, "error"))
 			return
 		}
-		fmt.Println(time.Now())
-		fmt.Println(string(p))
 		if err := conn.WriteMessage(messageType, p); err != nil {
 			log.Println(errors.Wrap(err, "error"))
 			return
