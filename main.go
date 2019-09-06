@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// https://ops.tips/blog/nginx-http2-server-push/
 // http/2 지원관련 https://blog.cloudflare.com/tools-for-debugging-testing-and-using-http-2/
 // https://github.com/gaurav-gogia/simple-http2-server
 // https://stackoverflow.com/questions/37321760/how-to-set-up-lets-encrypt-for-a-go-server-application
@@ -32,6 +33,8 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
+
+var hub = backend.Clients{}
 
 func jwtAuthenticationFunc(w http.ResponseWriter, r *http.Request) {
 	length, _ := strconv.Atoi(r.Header.Get("Content-Length"))
@@ -83,14 +86,55 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func read(conn *websocket.Conn) {
+	var name string
+	messageType, p, err := conn.ReadMessage()
+	if err != nil {
+		return
+	}
+	if messageType == websocket.TextMessage {
+		name = string(p)
+	} else {
+		return
+	}
+	clientChan := make(chan string)
+	if err != nil {
+		return
+	}
+	hub.Sign(clientChan)
+	conn.SetCloseHandler(func(code int, text string) error {
+		message := websocket.FormatCloseMessage(code, "")
+		conn.WriteControl(websocket.CloseMessage, message, time.Now().Add(time.Second))
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+			hub.Unsign(clientChan)
+		}
+		return nil
+	})
+	go write(clientChan, conn, name)
+	go hub.Broadcast("Client " + name + " conneted")
+
 	for {
-		messageType, p, err := conn.ReadMessage()
+		_, p, err := conn.ReadMessage()
 		if err != nil {
 			log.Println(errors.Wrap(err, "error"))
 			return
 		}
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			log.Println(errors.Wrap(err, "error"))
+		if string(p) == "quit" {
+			hub.Broadcast("Client " + name + " disconneted")
+			hub.Unsign(clientChan)
+			conn.Close()
+		}
+		hub.Broadcast(name + " say: " + string(p))
+	}
+}
+
+func write(clientChann chan string, conn *websocket.Conn, name string) {
+	for {
+		s := <-clientChann
+		err := conn.WriteMessage(websocket.TextMessage, []byte(s))
+		if err != nil {
+			hub.Broadcast("Client " + name + " disconneted")
+			hub.Unsign(clientChann)
+			conn.Close()
 			return
 		}
 	}
@@ -98,6 +142,8 @@ func read(conn *websocket.Conn) {
 
 func main() {
 	host := flag.String("host", ":3000", "set host")
+	hub.Init()
+	go hub.Hub()
 	//https://blog.kowalczyk.info/article/Jl3G/https-for-free-in-go-with-little-help-of-lets-encrypt.html
 	//https://stackoverflow.com/questions/15394904/nginx-load-balance-with-upstream-ssl
 	http.Handle("/", http.FileServer(http.Dir("./frontend/build")))
@@ -108,3 +154,5 @@ func main() {
 	http.HandleFunc("/ws", websocketHandler)
 	log.Fatal(http.ListenAndServe(*host, nil))
 }
+
+//https://www.youtube.com/watch?v=mML6GiOAM1w

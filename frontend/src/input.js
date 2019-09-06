@@ -52,7 +52,7 @@ class Input extends React.Component {
     onChatButtonClick = () => {
       this.props.history.push({
         pathname: '/chat',
-        state: {token: this.state.token}
+        state: {token: this.state.token, key: this.state.key}
       });
     }
 

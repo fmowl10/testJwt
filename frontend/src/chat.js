@@ -6,13 +6,14 @@ import {w3cwebsocket as W3CWebSocket} from "websocket";
 class Chat extends React.Component {
     constructor(props) {
         super(props)
-        this.state = {token : this.props.location.state.token, text : '', message : '', enable : false};
+        this.state = {token : this.props.location.state.token, key : this.props.location.state.key, text : '', message : '', enable : false};
         this.socket = new W3CWebSocket('wss://test.fmowl.com/ws', this.state.token);
     }
     componentWillMount() {
         this.socket.onopen = () => {
             this.setState({text :'Websocket connected'});
             this.setState({enable: true})
+            this.socket.send(this.state.key)
         }
         this.socket.onmessage = (message) => {
             this.setState({text : this.state.text +" \n"+ message.data})
@@ -31,6 +32,7 @@ class Chat extends React.Component {
         return (
             <div style={{backgroundColor:"#6b7572", padding:10, position:"absolute", top:0, right:0, bottom:0, left:0}}>
                 <div style={{backgroundColor:"#f7f7f7", padding:10, width:"100%", height:"100%"}}>
+                    <label>You are {this.state.key}</label>
                     <p style={{wordBreak:"break-all", wordWrap:"break-word", whiteSpace:"pre", width:200, heigth:"100%"}}>hello world<br/>{this.state.text}</p>
                     <div style={{position:"relative",bottom:0, width:"100%"}}>
                         <Form onSubmit={this.handleSubmit} >
