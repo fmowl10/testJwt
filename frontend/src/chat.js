@@ -16,7 +16,11 @@ class Chat extends React.Component {
             this.socket.send(this.state.key)
         }
         this.socket.onmessage = (message) => {
-            this.setState({text : this.state.text + "\n" + message.data})
+            if (this.state.text.length == 0) {
+                this.setState({text:message.data})
+            } else {
+                this.setState({text : this.state.text + "\n" + message.data})
+            }
         }
         this.socket.onclose = () => {
             this.setState({enable: false, text: this.state.text + "\ndisconneted"})
@@ -31,7 +35,7 @@ class Chat extends React.Component {
         const message = this.state.message
         this.setState({message: ""})
         if (message == "!help") {
-            this.setState({text: this.state.text +this.help, helpVisible : true})
+            this.setState({helpVisible : true})
             return
         }
         if (message == "!clear") {
@@ -92,7 +96,7 @@ class Chat extends React.Component {
                         }}>
                         {this.state.text}
                     </p>
-                    <div style ={{width:"100%"}}>
+                    <div>
                         <Form onSubmit={this.handleSubmit} autoComplete="off">
                                 <Input 
                                     value = {message}
