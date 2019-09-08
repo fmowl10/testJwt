@@ -1,6 +1,6 @@
 import React from 'react'
 import 'semantic-ui-css/semantic.min.css'
-import {Input, Form, Message, Segment} from 'semantic-ui-react'
+import {Input, Form, Message} from 'semantic-ui-react'
 import {w3cwebsocket as W3CWebSocket} from "websocket";
 
 class Chat extends React.Component {
@@ -77,8 +77,7 @@ class Chat extends React.Component {
                     </Message>}
                     <Message hidden={this.state.enable} error>
                         <Message.Header>Disconnected with Server</Message.Header>
-                        if you want to reconnetction go https://test.fmowl.com/
-                        (if go back refresh it)
+                        if you want to reconnect go <a href="https://test.fmowl.com/">here</a>
                     </Message>
                     <label>You are {this.state.key}</label>
                     <p style={{
