@@ -14,19 +14,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// https://ops.tips/blog/nginx-http2-server-push/
-// http/2 지원관련 https://blog.cloudflare.com/tools-for-debugging-testing-and-using-http-2/
-// https://github.com/gaurav-gogia/simple-http2-server
-// https://stackoverflow.com/questions/37321760/how-to-set-up-lets-encrypt-for-a-go-server-application
-// delev 사용법 https://github.com/campoy/go-tooling-workshop/blob/master/3-dynamic-analysis/1-debugging/1-delve.md
-
 // TokenDurationTime is duration time of token
 //
 var TokenDurationTime = time.Minute * 5
-
-// wait time 설정하자
-// nginx 의 설정이다
-// https://stackoverflow.com/questions/28828332/gorilla-websocket-disconnects-after-a-minute
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -131,8 +121,6 @@ func main() {
 	host := flag.String("host", ":3000", "set host")
 	hub.Init()
 	go hub.Hub()
-	//https://blog.kowalczyk.info/article/Jl3G/https-for-free-in-go-with-little-help-of-lets-encrypt.html
-	//https://stackoverflow.com/questions/15394904/nginx-load-balance-with-upstream-ssl
 	http.Handle("/", http.FileServer(http.Dir("./frontend/build")))
 	http.Handle("/static", http.StripPrefix("/static", http.FileServer(http.Dir("./frontend/build/static"))))
 
@@ -141,5 +129,3 @@ func main() {
 	http.HandleFunc("/ws", websocketHandler)
 	log.Fatal(http.ListenAndServe(*host, nil))
 }
-
-//https://www.youtube.com/watch?v=mML6GiOAM1w
