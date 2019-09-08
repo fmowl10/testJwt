@@ -36,6 +36,7 @@ func (c Clients) Unsign(clientChan chan string) {
 
 func (c *Clients) Hub() {
 	for {
+		log.Println("number of Chans: ", len(c.clients))
 		select {
 		case client := <-c.singChan:
 			c.clients = append(c.clients, client)

@@ -12,7 +12,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
 )
 
 // https://ops.tips/blog/nginx-http2-server-push/
@@ -81,6 +80,7 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	err = ws.WriteMessage(1, []byte("Hi Client!"))
 	go read(ws)
 }
@@ -101,40 +101,27 @@ func read(conn *websocket.Conn) {
 		return
 	}
 	hub.Sign(clientChan)
-	conn.SetCloseHandler(func(code int, text string) error {
-		message := websocket.FormatCloseMessage(code, "")
-		conn.WriteControl(websocket.CloseMessage, message, time.Now().Add(time.Second))
-		if websocket.IsUnexpectedCloseError(err, websocket.CloseAbnormalClosure, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
-			hub.Unsign(clientChan)
-		}
-		return nil
-	})
+
 	go write(clientChan, conn, name)
 	go hub.Broadcast("Client " + name + " conneted")
 
 	for {
 		_, p, err := conn.ReadMessage()
 		if err != nil {
-			log.Println(errors.Wrap(err, "error"))
-			return
-		}
-		if string(p) == "quit" {
 			hub.Broadcast("Client " + name + " disconneted")
 			hub.Unsign(clientChan)
 			conn.Close()
+			return
 		}
 		hub.Broadcast(name + " say: " + string(p))
 	}
 }
 
-func write(clientChann chan string, conn *websocket.Conn, name string) {
+func write(clientChan chan string, conn *websocket.Conn, name string) {
 	for {
-		s := <-clientChann
+		s := <-clientChan
 		err := conn.WriteMessage(websocket.TextMessage, []byte(s))
 		if err != nil {
-			hub.Broadcast("Client " + name + " disconneted")
-			hub.Unsign(clientChann)
-			conn.Close()
 			return
 		}
 	}
