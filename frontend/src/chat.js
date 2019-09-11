@@ -34,6 +34,7 @@ class Chat extends React.Component {
     handleSubmit = () =>{
         const message = this.state.message
         this.setState({message: ""})
+        // commands !help, !clear & !quit
         if (message == "!help") {
             this.setState({helpVisible : true})
             return

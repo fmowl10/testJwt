@@ -12,6 +12,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
+	"github.com/labstack/echo"
 )
 
 // TokenDurationTime is duration time of token
@@ -25,10 +26,10 @@ var upgrader = websocket.Upgrader{
 
 var hub = backend.Clients{}
 
-func jwtAuthenticationFunc(w http.ResponseWriter, r *http.Request) {
-	length, _ := strconv.Atoi(r.Header.Get("Content-Length"))
+func jwtAuthenticationFunc(ctx echo.Context) error {
+	length, _ := strconv.Atoi(ctx.Request().Header.Get("Content-Length"))
 	body := make([]byte, length)
-	r.Body.Read(body)
+	ctx.Request().Body.Read(body)
 	var Data map[string]interface{}
 	json.Unmarshal(body, &Data)
 	now := time.Now()
@@ -36,59 +37,58 @@ func jwtAuthenticationFunc(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims(Data))
 	key := []byte("test")
 	ss, _ := token.SignedString(key)
-	w.Write([]byte(ss))
+	return ctx.String(http.StatusOK, ss)
 }
 
 // HelloAPI write Hello world.
 //
-func HelloAPI(w http.ResponseWriter, r *http.Request) {
-	rawToken := r.Header.Get("JWT")
+func HelloAPI(ctx echo.Context) error {
+	rawToken := ctx.Request().Header.Get("JWT")
 	if len(rawToken) == 0 {
-		backend.ResponseError(w, http.StatusForbidden, "Can not found token")
-		return
+		return ctx.String(http.StatusForbidden, "Token not included")
 	}
 	if backend.VaildToken(rawToken) {
-		w.Write([]byte("Hello World!"))
+		return ctx.String(http.StatusOK, "Hello World!")
 	} else {
-		backend.ResponseError(w, http.StatusBadRequest, "Token error")
+		return ctx.String(http.StatusBadRequest, "Token error")
 	}
 }
 
-func websocketHandler(w http.ResponseWriter, r *http.Request) {
+func websocketHandler(ctx echo.Context) error {
 	upgrader.CheckOrigin = func(r *http.Request) bool {
 		return true
 	}
 
-	subProtocol := r.Header.Get("Sec-WebSocket-Protocol")
+	subProtocol := ctx.Request().Header.Get("Sec-WebSocket-Protocol")
 	if !backend.VaildToken(subProtocol) {
-		backend.ResponseError(w, http.StatusForbidden, "Token error")
-		return
+		return ctx.String(http.StatusForbidden, "Token error")
 	}
 	upgrader.Subprotocols = []string{subProtocol}
 
-	ws, err := upgrader.Upgrade(w, r, nil)
+	ws, err := upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	err = ws.WriteMessage(1, []byte("Hi Client!"))
-	go read(ws)
+	return read(ws, ctx)
 }
 
-func read(conn *websocket.Conn) {
+func read(conn *websocket.Conn, ctx echo.Context) error {
 	var name string
 	messageType, p, err := conn.ReadMessage()
 	if err != nil {
-		return
+		return nil
 	}
 	if messageType == websocket.TextMessage {
 		name = string(p)
 	} else {
-		return
+		return nil
 	}
 	clientChan := make(chan string)
 	if err != nil {
-		return
+		return nil
 	}
 	hub.Sign(clientChan)
 
@@ -101,7 +101,7 @@ func read(conn *websocket.Conn) {
 			hub.Broadcast("Client " + name + " disconneted")
 			hub.Unsign(clientChan)
 			conn.Close()
-			return
+			return nil
 		}
 		hub.Broadcast(name + " say: " + string(p))
 	}
@@ -118,14 +118,16 @@ func write(clientChan chan string, conn *websocket.Conn, name string) {
 }
 
 func main() {
+	e := echo.New()
 	host := flag.String("host", ":3000", "set host")
 	hub.Init()
 	go hub.Hub()
-	http.Handle("/", http.FileServer(http.Dir("./frontend/build")))
-	http.Handle("/static", http.StripPrefix("/static", http.FileServer(http.Dir("./frontend/build/static"))))
+	e.Static("/", "frontend/build")
+	e.File("/favicon.ico", "frontend/build/favicon.ico")
+	e.Static("/static", "frontend/build/static")
+	e.POST("/jwt", jwtAuthenticationFunc)
 
-	http.HandleFunc("/jwt", jwtAuthenticationFunc)
-	http.HandleFunc("/api", HelloAPI)
-	http.HandleFunc("/ws", websocketHandler)
-	log.Fatal(http.ListenAndServe(*host, nil))
+	e.GET("/api", HelloAPI)
+	e.GET("/ws", websocketHandler)
+	log.Fatal(e.Start(*host))
 }
