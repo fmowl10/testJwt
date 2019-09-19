@@ -16,7 +16,7 @@ class Chat extends React.Component {
             this.socket.send(this.state.key)
         }
         this.socket.onmessage = (message) => {
-            if (this.state.text.length == 0) {
+            if (this.state.text.length === 0) {
                 this.setState({text:message.data})
             } else {
                 this.setState({text : this.state.text + "\n" + message.data})
@@ -35,19 +35,19 @@ class Chat extends React.Component {
         const message = this.state.message
         this.setState({message: ""})
         // commands !help, !clear & !quit
-        if (message == "!help") {
+        if (message === "!help") {
             this.setState({helpVisible : true})
             return
         }
-        if (message == "!clear") {
+        if (message === "!clear") {
             this.setState({text:""})
             return
         }
-        if (message == "!quit") {
+        if (message === "!quit") {
             this.socket.close()
             return
         }
-        if (message.length == 0) {
+        if (message.length === 0) {
             return
         }
         this.socket.send(this.state.message)

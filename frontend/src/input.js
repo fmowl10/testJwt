@@ -14,12 +14,12 @@ class Input extends React.Component {
       return fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type' : 'Application/json'
+          'Content-Type' : 'application/json'
         },
         body : JSON.stringify(data)
       }).then(response =>  { 
             if (response.ok) {
-                return response.text()
+                return response.json()
             } else {
                 console.log(response.text())
                 return "not working"
@@ -32,7 +32,7 @@ class Input extends React.Component {
       return fetch(url, {
         method : 'Get',
         headers: {
-          'JWT' : token
+          'Authorization' : "Bearer " + token
         }
       })
       .then(response => response.text())
@@ -46,7 +46,7 @@ class Input extends React.Component {
             return ;
         }
         const data = await this.postInput('https://test.fmowl.com/jwt', value)
-        this.setState({token: data, error: false});
+        this.setState({token: data.token, error: false});
     }
 
     onChatButtonClick = () => {

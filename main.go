@@ -1,18 +1,17 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-	"testJwt/backend"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/fmowl10/testJwt/utils"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 // TokenDurationTime is duration time of token
@@ -24,34 +23,34 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var hub = backend.Clients{}
+var hub = utils.Clients{}
 
 func jwtAuthenticationFunc(ctx echo.Context) error {
-	length, _ := strconv.Atoi(ctx.Request().Header.Get("Content-Length"))
-	body := make([]byte, length)
-	ctx.Request().Body.Read(body)
-	var Data map[string]interface{}
-	json.Unmarshal(body, &Data)
-	now := time.Now()
-	Data["exp"] = now.Add(TokenDurationTime).Unix()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims(Data))
-	key := []byte("test")
-	ss, _ := token.SignedString(key)
-	return ctx.String(http.StatusOK, ss)
+	u := new(utils.User)
+	if err := ctx.Bind(u); err != nil {
+		return ctx.String(http.StatusForbidden, err.Error())
+	}
+	claims := &utils.JwtClaim{
+		*u,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Minute).Unix(),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	t, err := token.SignedString([]byte("jwtTokenKey"))
+	if err != nil {
+		return ctx.String(http.StatusServiceUnavailable, "no")
+	}
+
+	return ctx.JSON(http.StatusOK, echo.Map{
+		"token": t,
+	})
 }
 
 // HelloAPI write Hello world.
 //
 func HelloAPI(ctx echo.Context) error {
-	rawToken := ctx.Request().Header.Get("JWT")
-	if len(rawToken) == 0 {
-		return ctx.String(http.StatusForbidden, "Token not included")
-	}
-	if backend.VaildToken(rawToken) {
-		return ctx.String(http.StatusOK, "Hello World!")
-	} else {
-		return ctx.String(http.StatusBadRequest, "Token error")
-	}
+	return ctx.String(http.StatusOK, "hello")
 }
 
 func websocketHandler(ctx echo.Context) error {
@@ -60,8 +59,14 @@ func websocketHandler(ctx echo.Context) error {
 	}
 
 	subProtocol := ctx.Request().Header.Get("Sec-WebSocket-Protocol")
-	if !backend.VaildToken(subProtocol) {
-		return ctx.String(http.StatusForbidden, "Token error")
+	token, _ := jwt.Parse(subProtocol, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("there was an error")
+		}
+		return []byte("jwtTokenKey"), nil
+	})
+	if !token.Valid {
+		return ctx.JSON(http.StatusUnauthorized, map[string]string{"message": "invalid or expired jwt"})
 	}
 	upgrader.Subprotocols = []string{subProtocol}
 
@@ -118,16 +123,40 @@ func write(clientChan chan string, conn *websocket.Conn, name string) {
 }
 
 func main() {
+	// init server
 	e := echo.New()
 	host := flag.String("host", ":3000", "set host")
+
+	// init hub and run
 	hub.Init()
 	go hub.Hub()
+
+	// echo Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	// web page setting
 	e.Static("/", "frontend/build")
-	e.File("/favicon.ico", "frontend/build/favicon.ico")
+	//e.File("/favicon.ico", "frontend/build/favicon.ico")
 	e.Static("/static", "frontend/build/static")
+
+	// jwt config
+	helloRoute := e.Group("/api")
+
+	// claims setting
+	config := middleware.JWTConfig{
+		Claims:     &utils.JwtClaim{},
+		SigningKey: []byte("jwtTokenKey"),
+	}
+	helloRoute.Use(middleware.JWTWithConfig(config))
+	helloRoute.GET("", HelloAPI)
+	// routing
 	e.POST("/jwt", jwtAuthenticationFunc)
 
-	e.GET("/api", HelloAPI)
+	// api and websocket routing
+	//e.GET("/api", HelloAPI)
 	e.GET("/ws", websocketHandler)
+
+	// running
 	log.Fatal(e.Start(*host))
 }
