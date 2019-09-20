@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func ExampleMarsheaRole() {
+func ExampleMarshalRole() {
 	host := Host
 	local := Local
 	b, _ := json.Marshal(host)
