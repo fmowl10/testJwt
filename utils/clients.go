@@ -18,12 +18,13 @@ func (c Clients) Broadcast(s string) {
 	}
 }
 
-// Init intialize CLients
-func (c *Clients) Init() {
-	log.Println("client log: Init")
+// NewClients make new Clients struct
+func NewClients() *Clients {
+	c := Clients{}
 	c.clients = make([]chan<- string, 0, 10)
 	c.singChan = make(chan chan string)
 	c.unignChan = make(chan chan string)
+	return &c
 }
 
 // Sign add channel to c.clients

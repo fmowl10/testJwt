@@ -23,7 +23,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var hub = utils.Clients{}
+var hub = utils.NewClients()
 
 func jwtAuthenticationFunc(ctx echo.Context) error {
 	u := new(utils.User)
@@ -127,8 +127,7 @@ func main() {
 	e := echo.New()
 	host := flag.String("host", ":3000", "set host")
 
-	// init hub and run
-	hub.Init()
+	// run hub
 	go hub.Hub()
 
 	// echo Middleware
