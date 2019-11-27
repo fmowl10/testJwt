@@ -33,7 +33,7 @@ func ExampleUnMarshalRole() {
 
 func ExampleMarshalUser() {
 	decoded := User{Role: Host, Key: "123"}
-	wantEncoded := `{"role":"123","role":"host"}`
+	wantEncoded := `{"key":"123","role":"host"}`
 	encodedData, _ := json.Marshal(decoded)
 	fmt.Println(wantEncoded == string(encodedData))
 	// Output:
