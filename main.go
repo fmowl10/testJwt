@@ -126,6 +126,7 @@ func main() {
 	// init server
 	e := echo.New()
 	host := flag.String("host", ":3000", "set host")
+	flag.Parse()
 
 	// run hub
 	go hub.Hub()
