@@ -7,7 +7,8 @@ class Input extends React.Component {
         super(props);
         this.state = {key:'', role:'', token:'', value : '', error:false};
         this.isActive = true;
-        this.options = [{key:'local', value:'local', text:'local'}, {key:'host', value:'host', text:'host'}];
+        this.options = [{key:'local', value:'local', text:'local'}, 
+          {key:'host', value:'host', text:'host'}];
     }
 
     postInput= (url='', data='') =>  {
@@ -45,7 +46,7 @@ class Input extends React.Component {
             this.setState({error:true})
             return ;
         }
-        const data = await this.postInput('https://test.fmowl.com/jwt', value)
+        const data = await this.postInput('/jwt', value)
         this.setState({token: data.token, error: false});
     }
 
@@ -62,7 +63,7 @@ class Input extends React.Component {
 
     onApiButtonClicked = () => {
         this.setState({value: ''})
-        this.getData("https://test.fmowl.com/api", this.state.token)
+        this.getData("/api", this.state.token)
         .then(data => {
             this.setState({value: data})
         })
@@ -71,7 +72,8 @@ class Input extends React.Component {
 
     render() {
         return (
-          <div style={{width:400, border:"5px solid black", borderRadius:20, padding:10}}>
+          <div style={
+            {width:400, border:"5px solid black", borderRadius:20, padding:10}}>
             <Grid columns={2}>
               <Grid.Column>
               <Form onSubmit={this.handleSubmit} error={this.state.error}>
@@ -98,9 +100,14 @@ class Input extends React.Component {
               <Grid.Column>
                 {this.state.token !== 'not working' && this.state.token && 
                     <div>
-                        <div style={{width:180, wordBreak:"break-all", wordWrap:"break-word", }}>{this.state.token}</div>
-                        <Button name="apiButton"onClick={this.onApiButtonClicked}>Get Hello</Button>
-                        <Button name="chatButton"onClick={this.onChatButtonClick}>Go Chat</Button>
+                        <div style={
+                          {width:180, wordBreak:"break-all", wordWrap:"break-word", }}>
+                            {this.state.token}</div>
+                        <Button name="apiButton"onClick={this.onApiButtonClicked}>
+                            Get Hello
+                        </Button>
+                        <Button name="chatButton"onClick={this.onChatButtonClick}>
+                        	Go Chat</Button>
                         <h1 id='api'>{this.state.value}</h1>
                     </div>
                 }

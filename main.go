@@ -66,7 +66,8 @@ func websocketHandler(ctx echo.Context) error {
 		return []byte("jwtTokenKey"), nil
 	})
 	if !token.Valid {
-		return ctx.JSON(http.StatusUnauthorized, map[string]string{"message": "invalid or expired jwt"})
+		return ctx.JSON(http.StatusUnauthorized,
+			map[string]string{"message": "invalid or expired jwt"})
 	}
 	upgrader.Subprotocols = []string{subProtocol}
 

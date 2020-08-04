@@ -6,8 +6,13 @@ import {w3cwebsocket as W3CWebSocket} from "websocket";
 class Chat extends React.Component {
     constructor(props) {
         super(props)
-        this.state = {token : this.props.location.state.token, key : this.props.location.state.key, text : '', message : '', enable : false, helpVisible: true};
-        this.socket = new W3CWebSocket('wss://test.fmowl.com/ws', this.state.token);
+        this.state = {token : this.props.location.state.token, 
+                    key : this.props.location.state.key, 
+                    text : '', message : '', enable : false, helpVisible: true
+                };
+        var host = (window.location.protocol === "https:"?"wws://":"ws://")
+            + window.location.host + "/ws"
+        this.socket = new W3CWebSocket(host, this.state.token);
     }
     componentWillMount() {
         this.socket.onopen = () => {
@@ -82,7 +87,7 @@ class Chat extends React.Component {
                     </Message>}
                     <Message hidden={this.state.enable} error>
                         <Message.Header>Disconnected with Server</Message.Header>
-                        if you want to reconnect go <a href="https://test.fmowl.com/">here</a>
+                        if you want to reconnect go <a href="/">here</a>
                     </Message>
                     <label>You are {this.state.key}</label>
                     <p style={{

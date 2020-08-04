@@ -1,0 +1,13 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "dlv",
+            "type": "shell",
+            "command": "cd ${workspaceFolder} && dlv debug --listen=:2345 --api-version=2 --headless",
+            "group": "build"
+        }
+    ]
+}
